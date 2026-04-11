@@ -1,295 +1,350 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Read and Earn Bot</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Miner — Earn System</title>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:"Roboto",sans-serif;}
-body{background:#000;color:white;padding:20px;padding-top:120px;}
-.header{position:fixed;top:0;width:100%;background:#000;display:flex;justify-content:space-between;align-items:center;padding:15px 20px;z-index:100;}
-.header h1{font-size:24px;}
-.button-container{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
-.btn{flex:1;padding:10px;border:none;border-radius:8px;cursor:pointer;font-weight:700;}
-.read-btn{background:#007bff;color:white;}
-.task-btn{background:#ffc107;color:black;}
-.watch-btn{background:#28a745;color:white;}
-.withdraw-btn{background:#6f42c1;color:white;}
-.referral-btn{background:#fd7e14;color:white;}
-.article-container{background:#222;padding:12px;border-radius:12px;overflow-y:auto;max-height:60vh;}
-#commentSection{margin-top:15px;}
-#commentBox, #submitComment{display:block;margin-top:10px;padding:8px;border-radius:6px;border:1px solid #555;background:#111;color:white;width:100%;}
-.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#111;padding:20px;border-radius:12px;z-index:200;max-width:400px;width:90%;text-align:center;}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#28a745;color:white;padding:10px 20px;border-radius:8px;opacity:0;transition:opacity 0.5s;}
-.toast.show{opacity:1;}
+:root{
+  --bg:#0a0d12;
+  --panel:#11161f;
+  --primary:#00d4ff;
+  --text:#eaf2f8;
+  --sub:#7c8b99;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  font-family:sans-serif;
+  color:var(--text);
+}
+
+/* HEADER */
+.top{
+  padding:14px;
+  text-align:center;
+  font-weight:bold;
+  color:var(--primary);
+}
+
+/* BALANCE */
+.balance{
+  margin:10px;
+  padding:18px;
+  border-radius:14px;
+  background:linear-gradient(135deg,#00d4ff,#0077ff);
+  text-align:center;
+  color:#000;
+}
+
+.balance span{
+  font-size:28px;
+  display:block;
+}
+
+/* ACTION BAR */
+.actions{
+  display:flex;
+  gap:10px;
+  padding:10px;
+}
+
+.actions button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background:var(--primary);
+  font-weight:bold;
+}
+
+/* CARDS */
+.section{
+  padding:10px;
+}
+
+.box{
+  background:var(--panel);
+  padding:14px;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+
+/* NAV */
+.nav{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  background:#0e141c;
+}
+
+.nav button{
+  flex:1;
+  padding:12px;
+  border:none;
+  background:none;
+  color:var(--sub);
+}
+
+.nav .on{
+  color:var(--primary);
+}
+
+/* POPUP */
+.popup{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.85);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+}
+
+.popup button{
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  background:var(--primary);
+  color:#000;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-<h1>EarnZone Bot</h1>
-<div id="pointsDisplay">Balance: 0 pts</div>
+<div class="top">⚡ Nova Miner</div>
+
+<div id="app">
+
+<!-- HOME -->
+<div id="home">
+
+<div class="balance">
+  Balance
+  <span>$<b id="bal">0.000000</b></span>
 </div>
 
-<div class="button-container">
-<button class="btn read-btn" onclick="openArticle()">Read & Earn</button>
-<button class="btn task-btn" onclick="showTaskAd()">Complete Ad Task (+Reward)</button>
-<button class="btn watch-btn" onclick="showWatchAd()">Watch Ad (+Reward)</button>
-<button class="btn withdraw-btn" onclick="openWithdraw()">Withdraw</button>
-<button class="btn referral-btn" onclick="copyReferral()">Referral</button>
+<div class="actions">
+  <button onclick="adsReward()">Watch Ad</button>
+  <button onclick="startBonus()">Bonus</button>
 </div>
 
-<div class="article-container" id="articleContainer"></div>
+<div class="section">
 
-<div id="commentSection" style="display:none;">
-<textarea id="commentBox" placeholder="Write a comment..."></textarea>
-<button id="submitComment" class="btn read-btn" onclick="submitComment()">Submit Comment</button>
+<div class="box">
+  <div>Today's Profit</div>
+  <b id="today">0.000000</b>
 </div>
 
-<!-- Withdraw -->
-<div class="popup" id="withdrawPopup" style="display:none;">
-<h2>Withdraw Balance</h2>
-<p>Your balance: <span id="withdrawPoints">0</span> pts</p>
+<div class="box">
+  <div>Energy</div>
+  <b id="energy">20</b>
+</div>
 
-<select id="withdrawMethod">
-<option value="payeer">Payeer</option>
-<option value="skrill">Skrill</option>
-<option value="wire">Wire Transfer</option>
-<option value="usdt">USDT TRC20</option>
+<div class="box">
+  <button onclick="claimTask()">Claim Gold</button>
+  <div id="taskArea"></div>
+</div>
+
+</div>
+
+</div>
+
+<!-- WALLET -->
+<div id="wallet" style="display:none;padding:10px;">
+<div class="box">
+<select id="method">
+<option>Bank</option>
+<option>Litecoin</option>
+<option>Opay</option>
+<option>Payeer</option>
 </select>
 
-<input id="withdrawDetails" placeholder="Account / Wallet details">
-<button class="btn withdraw-btn" onclick="submitWithdraw()">Send Request</button>
-<button onclick="closeWithdraw()">Close</button>
+<input id="details" placeholder="Enter details">
+
+<button onclick="withdraw()">Withdraw</button>
+</div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- INFO -->
+<div id="info" style="display:none;padding:10px;">
+<div class="box">
+Earn by mining, ads, and tasks.
+</div>
+</div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<button class="on" onclick="nav('home',this)">Home</button>
+<button onclick="nav('wallet',this)">Wallet</button>
+<button onclick="nav('info',this)">Info</button>
+</div>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+<h3>Join Channel</h3>
+<button onclick="join()">Join & Earn</button>
+</div>
 
 <script>
-const tg = window.Telegram.WebApp ?? {};
+const tg = window.Telegram.WebApp;
 tg.expand();
 
-// ===== BALANCE =====
-let userBalance = parseInt(localStorage.getItem('userBalance')) || 0;
-updateBalance();
+/* STATE */
+let state = {
+  balance: Number(localStorage.balance)||0,
+  today: Number(localStorage.today)||0,
+  energy: Number(localStorage.energy)||20
+};
 
-function updateBalance(){
-  document.getElementById('pointsDisplay').innerText = `Balance: ${userBalance} pts`;
-}
-function saveBalance(){
-  localStorage.setItem('userBalance', userBalance);
-  updateBalance();
-}
-
-// ===== TOAST =====
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.innerText=msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3000);
+function save(){
+  localStorage.balance = state.balance;
+  localStorage.today = state.today;
+  localStorage.energy = state.energy;
 }
 
-// ===== ADS INIT (NO AUTO SHOW) =====
-const rewardAd = window.Adsgram.init({ blockId: "26901" });
-
-// ===== SMART SYSTEM =====
-let adCooldown = false;
-let adCount = parseInt(localStorage.getItem("adCount")) || 0;
-let lastReset = localStorage.getItem("lastReset") || Date.now();
-const DAILY_LIMIT = 20;
-
-if (Date.now() - lastReset > 86400000) {
-  adCount = 0;
-  localStorage.setItem("lastReset", Date.now());
-  localStorage.setItem("adCount", adCount);
+/* UI */
+function render(){
+  bal.textContent = state.balance.toFixed(6);
+  today.textContent = state.today.toFixed(6);
+  energy.textContent = state.energy;
 }
 
-function getRandomReward(){
-  return Math.floor(Math.random() * 71) + 80; // 80 -150
+/* NAV */
+function nav(page,btn){
+  home.style.display="none";
+  wallet.style.display="none";
+  info.style.display="none";
+
+  document.getElementById(page).style.display="block";
+
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
 }
 
-// ===== WATCH AD =====
-function showWatchAd(){
+/* MINING */
+setInterval(()=>{
+  state.balance += 0.000001;
+  state.today += 0.000001;
+  render();
+  save();
+},1000);
 
-  if(adCooldown) return showToast("⏳ Wait for cooldown...");
-  if(adCount >= DAILY_LIMIT) return showToast("🚫 Daily limit reached");
+/* ADSGRAM */
+const ad = Adsgram.init({blockId:"27164"});
 
-  let timeLeft = 5;
-  showToast("⏳ Starting in 5s");
-
-  const countdown = setInterval(()=>{
-    timeLeft--;
-    if(timeLeft > 0){
-      showToast("⏳ " + timeLeft + "s...");
-    } else {
-      clearInterval(countdown);
-
-      showToast("🔄 Processing...");
-
-      rewardAd.show().then(res=>{
-        if(res.done){
-          let reward = getRandomReward();
-          userBalance += reward;
-          saveBalance();
-
-          adCount++;
-          localStorage.setItem("adCount", adCount);
-
-          showToast(`✅ +${reward} pts earned`);
-        }
-      }).catch(()=>showToast("❌ Ad failed"));
-
-      adCooldown = true;
-      setTimeout(()=>adCooldown=false,10000);
+/* WATCH */
+function adsReward(){
+  ad.show().then(r=>{
+    if(r.done){
+      state.balance += 0.002;
+      state.energy += 5;
+      render(); save();
     }
-  },1000);
+  });
 }
 
-// ===== TASK SYSTEM =====
-let taskInProgress = false;
-const taskBlocks = ["task-26902","task-26903","task-26904"];
+/* CLAIM TASK */
+const tasks = ["27165","27166","27167","27168"];
 
-function showTaskAd(){
+function claimTask(){
+  const id = tasks[Math.floor(Math.random()*tasks.length)];
 
-  if(taskInProgress) return showToast("Finish current task first");
-  if(adCount >= DAILY_LIMIT) return showToast("Daily limit reached");
+  taskArea.innerHTML = `
+  <adsgram-task data-block-id="task-${id}"></adsgram-task>
+  <button id="doneBtn" style="display:none">Claim</button>
+  `;
 
-  taskInProgress = true;
+  let done=false;
 
-  const blockId = taskBlocks[Math.floor(Math.random()*taskBlocks.length)];
-  const container = document.createElement('div');
-  container.innerHTML = `<adsgram-task data-block-id="${blockId}"></adsgram-task>`;
-  document.body.appendChild(container);
+  taskArea.querySelector("adsgram-task")
+  .addEventListener("reward",()=>{
+    done=true;
+    doneBtn.style.display="block";
+  },{once:true});
 
-  const el = container.querySelector('adsgram-task');
-
-  el.addEventListener('reward', () => {
-
-    let reward = getRandomReward();
-    userBalance += reward;
-    saveBalance();
-
-    adCount++;
-    localStorage.setItem("adCount", adCount);
-
-    showToast(`✅ Task done +${reward}`);
-
-    container.remove();
-    taskInProgress = false;
-
-  }, {once:true});
+  doneBtn.onclick=()=>{
+    if(!done)return alert("Complete task first");
+    state.energy +=5;
+    render(); save();
+    taskArea.innerHTML="";
+  }
 }
 
-// ===== READ & EARN ARTICLE SYSTEM =====
-const articles = [
-  "Discover how to earn online safely. Start with small tasks and grow your balance consistently.",
-  "Learn ways to save money on daily expenses and invest in crypto smartly for passive income.",
-  "Explore online survey platforms that pay real cash and how to maximize your rewards easily.",
-  "Understand affiliate marketing and how sharing links can generate steady points over time.",
-  "Tips to increase your Telegram channel engagement and monetize it with Ads & sponsorships."
-];
+/* BONUS */
+let step=0;
 
-let currentArticleIndex = 0;
-let articleTimer = null;
-
-function openArticle() {
-  // Pick a random article
-  currentArticleIndex = Math.floor(Math.random() * articles.length);
-  const articleText = articles[currentArticleIndex];
-
-  document.getElementById('articleContainer').innerHTML =
-    `<h2>Read & Earn</h2><p>${articleText}</p>
-     <button class="btn read-btn" onclick="nextArticle()">Next Article</button>`;
-
-  document.getElementById('commentSection').style.display = 'block';
-
-  // Clear previous timer
-  if (articleTimer) clearTimeout(articleTimer);
-
-  // Start 30-second timer to reward points
-  articleTimer = setTimeout(() => {
-    userBalance += 5; // Reward 5 points
-    saveBalance();
-    showToast("✅ +5 pts for reading!");
-  }, 30000);
+function startBonus(){
+  step=0;
+  nextBonus();
 }
 
-// Function to go to next article
-function nextArticle() {
-  if (articleTimer) clearTimeout(articleTimer);
+function nextBonus(){
+  if(step>=4){
+    state.energy+=40;
+    render(); save();
+    taskArea.innerHTML="";
+    alert("Bonus completed");
+    return;
+  }
 
-  let nextIndex;
-  do {
-    nextIndex = Math.floor(Math.random() * articles.length);
-  } while (nextIndex === currentArticleIndex);
+  const id = tasks[Math.floor(Math.random()*tasks.length)];
 
-  currentArticleIndex = nextIndex;
-  const articleText = articles[currentArticleIndex];
+  taskArea.innerHTML = `
+  <div>Step ${step+1}/4</div>
+  <adsgram-task data-block-id="task-${id}"></adsgram-task>
+  <button id="next" style="display:none">Next</button>
+  `;
 
-  document.getElementById('articleContainer').innerHTML =
-    `<h2>Read & Earn</h2><p>${articleText}</p>
-     <button class="btn read-btn" onclick="nextArticle()">Next Article</button>`;
+  let ok=false;
 
-  articleTimer = setTimeout(() => {
-    userBalance += 5;
-    saveBalance();
-    showToast("✅ +5 pts for reading!");
-  }, 30000);
+  taskArea.querySelector("adsgram-task")
+  .addEventListener("reward",()=>{
+    ok=true;
+    next.style.display="block";
+  },{once:true});
+
+  next.onclick=()=>{
+    if(!ok)return;
+    step++;
+    nextBonus();
+  }
 }
 
-// ===== COMMENT =====
-function submitComment(){
-  let txt=document.getElementById("commentBox").value.trim();
-  if(!txt) return showToast("Write something");
-  if(userBalance < 6000) return showToast("Need 6000 pts");
-
-  userBalance -= 6000;
-  saveBalance();
-  showToast("Comment submitted");
+/* WITHDRAW */
+function withdraw(){
+  if(state.balance < 10){
+    alert("Minimum $10");
+    return;
+  }
+  alert("Request sent");
 }
 
-// ===== REFERRAL =====
-function copyReferral(){
-  let ref="https://t.me/Earnzonesbot?start="+Math.floor(Math.random()*99999);
-  navigator.clipboard.writeText(ref);
-  showToast("Copied!");
+/* PRELOAD */
+Adsgram.init({blockId:"27229"}).show().finally(()=>{
+  popup.style.display="flex";
+});
+
+/* JOIN */
+function join(){
+  state.energy+=4;
+  render(); save();
+  popup.style.display="none";
+  window.open("https://t.me/earnzoners");
 }
 
-// ===== WITHDRAW =====
-const MIN_WITHDRAW = 50000;
-
-function openWithdraw(){
-  if(userBalance < MIN_WITHDRAW) return showToast("Min 50k pts");
-  document.getElementById('withdrawPopup').style.display='block';
-  document.getElementById('withdrawPoints').innerText=userBalance;
-}
-
-function closeWithdraw(){
-  document.getElementById('withdrawPopup').style.display='none';
-}
-
-function submitWithdraw(){
-  let method=document.getElementById('withdrawMethod').value;
-  let details=document.getElementById('withdrawDetails').value;
-
-  if(!details) return showToast("Enter details");
-
-  tg.sendData(JSON.stringify({action:"withdraw",amount:MIN_WITHDRAW,method,details}));
-
-  userBalance -= MIN_WITHDRAW;
-  saveBalance();
-
-  showToast("Withdraw sent");
-  closeWithdraw();
-}
+render();
 </script>
-
-<script async src="https://adsgram.io/js/ad.js"></script>
 
 </body>
 </html>
